@@ -36,4 +36,19 @@ class ListMembreAttentes extends ListRecords
                 ]),
         ];
     }
+
+
+//    protected function getTableRowClasses($record): ?string
+//    {
+//        if ($record->status == 'APPROUVER') {
+//            return 'bg-green-100';
+//        }
+//
+//        if ($record->status == 'EN ATTENTE') {
+//            return 'bg-red-100';
+//        }
+//
+//        return null;
+//    }
+
 }

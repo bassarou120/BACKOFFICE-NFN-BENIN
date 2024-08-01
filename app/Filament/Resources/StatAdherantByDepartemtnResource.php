@@ -7,6 +7,7 @@ use App\Filament\Resources\StatAdherantByDepartemtnResource\RelationManagers;
 use App\Models\Adherant;
 use App\Models\Commune;
 use App\Models\Departement;
+use App\Models\RoleCommune;
 use App\Models\StatAdherantByDepartemtn;
 use App\Models\Statcommune;
 use App\Models\Statdepartement;
@@ -19,6 +20,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
 
 class StatAdherantByDepartemtnResource extends Resource
@@ -41,32 +43,69 @@ class StatAdherantByDepartemtnResource extends Resource
 
     public static function table(Table $table): Table
     {
+        Statdepartement:: query()->delete();
+        $user = Auth::user();
+        if($user->role->name=="Administrateur"){
+            $lisDep=Departement::all();
+            foreach ($lisDep as $com){
+
+                Statdepartement::firstOrCreate(
+                    ['departement' => $com->libelle],
+                    [
+                        'departement'=>$com->libelle,
+                        'total_adherant'=>Adherant::where('departement_id',$com->id)->count(),
+                        'homme'=>Adherant::where('departement_id',$com->id)->where('genre',"MASCULIN")->count(),
+                        'femme'=>Adherant::where('departement_id',$com->id)->where('genre',"FEMININ")->count(),
+                        'cep'=>Adherant::where('departement_id',$com->id)->where('niveau_instruction',"CEP")->count(),
+                        'bepc'=>Adherant::where('departement_id',$com->id)->where('niveau_instruction',"BEPC")->count(),
+                        'bac'=>Adherant::where('departement_id',$com->id)->where('niveau_instruction',"BAC")->count(),
+                        'licence'=>Adherant::where('departement_id',$com->id)->where('niveau_instruction',"LICENCE")->count(),
+                        'master'=>Adherant::where('departement_id',$com->id)->where('niveau_instruction',"MASTER")->count(),
+                        'doctorat'=>Adherant::where('departement_id',$com->id)->where('niveau_instruction',"DOCTORAT")->count(),
+                        'autre'=>Adherant::where('departement_id',$com->id)->where('niveau_instruction',"AUTRE")->count()
+                    ]
+                );
 
 
-        $lisDep=Departement::all();
-
-        foreach ($lisDep as $com){
-
-//            if (Adherant::where('commune_id',$com->id)->count()!=0){
-            Statdepartement::firstOrCreate(
-                ['departement' => $com->libelle],
-                [
-                    'departement'=>$com->libelle,
-                    'total_adherant'=>Adherant::where('departement_id',$com->id)->count(),
-                    'homme'=>Adherant::where('commune_id',$com->id)->where('genre',"MASCULIN")->count(),
-                    'femme'=>Adherant::where('commune_id',$com->id)->where('genre',"FEMININ")->count(),
-                    'cep'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"CEP")->count(),
-                    'bepc'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"BEPC")->count(),
-                    'bac'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"BAC")->count(),
-                    'licence'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"LICENCE")->count(),
-                    'master'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"MASTER")->count(),
-                    'doctorat'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"DOCTORAT")->count(),
-                    'autre'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"AUTRE")->count()
-                ]
-            );
-//            }
+            }
 
         }
+        elseif (substr($user->role->name,0,3)=="CCE" || substr($user->role->name,0,3)=="CC-"){
+            $roleCom=RoleCommune::where("role_id",'=',$user->role->id)->get();
+            $listCom=[];
+            foreach ($roleCom as $rc){array_push($listCom,$rc->commune_id);}
+
+            $lisDep=Departement::all();
+            foreach ($lisDep as $com){
+
+//                dd($com);
+
+                Statdepartement::firstOrCreate(
+                    ['departement' => $com->libelle],
+                    [
+                        'departement'=>$com->libelle,
+                        'total_adherant'=>Adherant::where('departement_id',$com->id) ->whereIn('commune_id',$listCom )->count(),
+                        'homme'=>Adherant::where('departement_id',$com->id) ->whereIn('commune_id',$listCom )->where('genre',"MASCULIN")->count(),
+                        'femme'=>Adherant::where('departement_id',$com->id) ->whereIn('commune_id',$listCom )->where('genre',"FEMININ")->count(),
+                        'cep'=>Adherant::where('departement_id',$com->id) ->whereIn('commune_id',$listCom )->where('niveau_instruction',"CEP")->count(),
+                        'bepc'=>Adherant::where('departement_id',$com->id) ->whereIn('commune_id',$listCom )->where('niveau_instruction',"BEPC")->count(),
+                        'bac'=>Adherant::where('departement_id',$com->id) ->whereIn('commune_id',$listCom )->where('niveau_instruction',"BAC")->count(),
+                        'licence'=>Adherant::where('departement_id',$com->id) ->whereIn('commune_id',$listCom )->where('niveau_instruction',"LICENCE")->count(),
+                        'master'=>Adherant::where('departement_id',$com->id) ->whereIn('commune_id',$listCom )->where('niveau_instruction',"MASTER")->count(),
+                        'doctorat'=>Adherant::where('departement_id',$com->id) ->whereIn('commune_id',$listCom )->where('niveau_instruction',"DOCTORAT")->count(),
+                        'autre'=>Adherant::where('departement_id',$com->id) ->whereIn('commune_id',$listCom )->where('niveau_instruction',"AUTRE")->count()
+                    ]
+                );
+
+
+            }
+
+        }
+        elseif($user->role->name=="Réseau des Femmes"){}
+        elseif ($user->role->name=="Réseau des Enseignants"){}
+        elseif ($user->role->name=="Réseau des Elèves et Etudiants"){}
+        elseif ($user->role->name=="Réseau des Artisans"){}
+
 
         return $table
             ->columns([
@@ -166,6 +205,11 @@ class StatAdherantByDepartemtnResource extends Resource
             ->filters([
                 //
             ])
+            ->modifyQueryUsing(function (\Illuminate\Contracts\Database\Eloquent\Builder $query) {
+                return $query->where('total_adherant','!=',0)
+                    ;
+
+            })
             ->actions([
 //                Tables\Actions\EditAction::make(),
             ])

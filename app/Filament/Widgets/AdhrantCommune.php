@@ -8,6 +8,7 @@ use App\Models\Statcommune;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class AdhrantCommune extends BaseWidget
 {
@@ -157,18 +158,105 @@ class AdhrantCommune extends BaseWidget
 
     public function table(Table $table): Table
     {
+
+
+
+
         return $table
-            ->query(
-                Commune::query()
-            )
+
             ->columns([
-                Tables\Columns\TextColumn::make('libelle')
-                ->label('Nom de la commune')
-                ->sortable()
-                ->searchable(),
+                Tables\Columns\TextColumn::make('commune')
+                    ->label('Nom commune')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('total_adherant')
+                    ->label('Total adhérants')
+                    ->sortable()
+                    ->searchable(),
 
-                Tables\Columns\TextColumn::make('adherants_count')->counts('adherants')
+                Tables\Columns\TextColumn::make('homme')
+                    ->label('Hommes')
+                    ->sortable()
+                    ->searchable(),
 
-            ]);
+                Tables\Columns\TextColumn::make('femme')
+                    ->label('Femmes')
+                    ->sortable()
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('cep')
+                    ->label('Diplôme CEP')
+                    ->sortable()
+                    ->searchable(),
+
+
+                Tables\Columns\TextColumn::make('bepc')
+                    ->label('Diplôme BEPC')
+                    ->sortable()
+                    ->searchable(),
+
+
+                Tables\Columns\TextColumn::make('bac')
+                    ->label('Diplôme BAC')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('licence')
+                    ->label('Licence')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('master')
+                    ->label('Licence')
+                    ->sortable()
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('doctorat')
+                    ->label('Autre Diplôme')
+                    ->sortable()
+                    ->searchable(),
+
+
+
+//                Tables\Columns\TextColumn::make('adherants_count')
+//                    ->label("Total adhérents")
+//                    ->sortable()
+//                    ->counts( 'adherants'),
+
+//                Tables\Columns\TextColumn::make('adherants_count')
+//                    ->label("Hommes ")
+//                    ->counts( [
+//                        'adherants' =>function (Builder $query) {
+//
+//                            $query-> where('genre', '=' ,"MASCULIN");
+//                        },
+//                    ])
+//                    ->sortable()
+
+
+
+
+//                Tables\Columns\TextColumn::make('masculin')
+//                    ->label('Masculin')
+//                    ->searchable()
+//                    ->sortable(),
+//                    ->counts([
+//                        'adherants' =>function (Builder $query) {
+//
+//                            $query-> where('genre', "=","MASCULIN");
+//                        },
+//                    ]),
+//                Tables\Columns\TextColumn::make('Feminin')
+//                    ->label('Masculin')
+//                    ->searchable()
+//                    ->sortable()
+//                    ->counts([
+//                        'adherants' => fn (Builder $query) => $query->where('genre', "=","FEMININ"),
+//                    ])
+
+
+            ])
+            ->query(
+                Statcommune::query()
+            );
+
+
     }
 }

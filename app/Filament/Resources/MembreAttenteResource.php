@@ -10,6 +10,7 @@ use App\Models\Adherant;
 use App\Models\Arrondissement;
 use App\Models\Commune;
 use App\Models\MembreAttente;
+use App\Models\RoleCommune;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -24,9 +25,12 @@ use Filament\Tables;
 use Filament\Tables\Actions\ExportAction;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Collection;
 use Filament\Tables\Enums\ActionsPosition;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Filament\Actions\Exports\Enums\ExportFormat;
 
@@ -45,7 +49,6 @@ class MembreAttenteResource extends Resource
     protected static ?string $navigationLabel="Membre en Attente";
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?int $navigationSort=3;
-
 
 
     public static function form(Form $form): Form
@@ -154,17 +157,19 @@ class MembreAttenteResource extends Resource
 
                     ])
                     ->native(false)
-                    ->default('EN ATTENTE'),
+                    ->default('EN ATTENTE DE VALIDATION'),
             ])
-
-            ->columns(4)
-            ;
+            ->columns(4);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
+
+                Tables\Columns\TextColumn::make('status')
+
+                    ->searchable(),
                 Tables\Columns\ImageColumn ::make('photo_identite')
                     ->label("Photo")
                     ->width(60)
@@ -179,8 +184,7 @@ class MembreAttenteResource extends Resource
                 Tables\Columns\TextColumn::make('telephone')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email'),
-                Tables\Columns\TextColumn::make('status')
-                    ->searchable(),
+
                 Tables\Columns\TextColumn::make('categorie_socio')
                     ->label('Catégorie socio professionelle')
                     ->sortable()
@@ -237,25 +241,70 @@ class MembreAttenteResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+
             ->filters([
                 //
             ])
             ->modifyQueryUsing(function ( Builder $query) {
+
+                $user = Auth::user();
+
+                if($user->role->name=="Administrateur"){
+
+
+                $req=$query->where('status','=',"EN ATTENTE DE VALIDATION")
+                ->orWhere('status','=','EN ATTENTE DE CONFIRMATION');
+
+                }elseif($user->role->name=="Réseau des Femmes"){
+                    $req= $query->where('status','=',"EN ATTENTE DE VALIDATION")
+                        ->where('genre','=',"FEMININ");
+                }elseif ($user->role->name=="Réseau des Enseignants")
+                {
+                    $req= $query->where('status','=',"EN ATTENTE DE VALIDATION")
+                        ->where('categorie_socio','=',"Etudiants")
+                        ->orWhere('categorie_socio','=',"Elèves");
+                }elseif ($user->role->name=="Réseau des Elèves et Etudiants"){
+                    $req= $query->where('status','=',"EN ATTENTE DE VALIDATION")
+                        ->where('categorie_socio','=',"Etudiants")
+                        ->orWhere('categorie_socio','=',"Elèves");
+                }elseif ($user->role->name=="Réseau des Artisans"){
+                    $req= $query->where('status','=',"EN ATTENTE DE VALIDATION")
+                        ->where('categorie_socio','=',"Artisans") ;
+
+                }
+                elseif (substr($user->role->name,0,3)=="CCE" || substr($user->role->name,0,3)=="CC-"){
+
+                    $roleCom=RoleCommune::where("role_id",'=',$user->role->id)->get();
+                    $listCom=[];
+                    foreach ($roleCom as $rc){array_push($listCom,$rc->commune_id);}
+
+                    $req= $query->where('status','=',"EN ATTENTE DE VALIDATION")
+                        ->whereIn('commune_id',$listCom );
+                }
+
+//
+
+
+                return  $req;
 //                return $query->where('status','!=',"EN ATTENTE");
-                return $query->where('status','!=',"APPROUVER");
+//                return $query->where('status','!=',"APPROUVER");
             })
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\Action::make('activate')
+
                     ->action(function ($record) {
 
+                        $user = Auth::user();
 
-                        $record->status="APPROUVER";
-                        $record->save();
+                        if($user->role->name=="Administrateur"){
 
-                        $content = [
-                            'subject' => 'Félicitations pour votre adhésion au parti FNF !',
-                            'body' =>"Cher(e)". $record->prenom." ".  $record->nom." ,<br>
+                            $record->status="APPROUVER";
+                            $record->save();
+
+                            $content = [
+                                'subject' => 'Félicitations pour votre adhésion au parti FNF !',
+                                'body' =>"Cher(e)". $record->prenom." ".  $record->nom." ,<br>
                             <p>Nous sommes ravis de vous informer que votre soumission en ligne pour devenir membre du parti FNF a été examinée et validée avec succès. À partir d'aujourd'hui, vous faites officiellement partie de notre parti.</p>
 
                             <p> Nous tenons à vous féliciter pour votre engagement et à vous remercier pour la confiance que vous nous accordez. Votre adhésion témoigne de votre soutien à nos valeurs et à nos objectifs communs.</p>
@@ -270,11 +319,28 @@ class MembreAttenteResource extends Resource
 
                              <br>
                             "
-                        ];
-                        Mail::to([$record->email ])->send(new SampleMail2($content));
+                            ];
+                            Mail::to([$record->email ])->send(new SampleMail2($content));
+
+                        }else{
+
+                            $record->status="EN ATTENTE DE CONFIRMATION";
+                            $record->save();
+
+                        }
+
 
                     } )
-                    ->label("Activer")
+                    ->label(function ($record){
+                        $user = Auth::user();
+
+                        if($user->role->name=="Administrateur"){
+                            return "Confirmer";
+                        }else{
+
+                            return "Valider";
+                        }
+                    })
                     ->requiresConfirmation()
                     ->color('success'),
 //                Tables\Actions\EditAction::make(),
@@ -330,8 +396,28 @@ class MembreAttenteResource extends Resource
 
                 ]),
 
-            ]);
+            ])
+
+
+
+            ->recordClasses(function (Adherant $record) {
+
+//                dd($record->status  );
+
+                $class = match ($record->status) {
+
+                    'EN ATTENTE DE VALIDATION' => 'bg-attent',
+                    'EN ATTENTE DE CONFIRMATION' => 'bg-confirmation',
+                    default => null,
+                };
+
+                error_log("Status: {$record->status}, Class: {$class}");
+
+                return $class;
+            });
+
     }
+
 
     public static function getRelations(): array
     {
@@ -375,9 +461,6 @@ class MembreAttenteResource extends Resource
             ]);
     }
 
-
-
-
     public static function getPages(): array
     {
         return [
@@ -388,6 +471,17 @@ class MembreAttenteResource extends Resource
     }
 
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        $user = Auth::user();
+        if($user->role->name=="Administrateur" || substr($user->role->name,0,3)=="CCE" || substr($user->role->name,0,3)=="CC-"){
+            return true;
+        }else{
+
+            return false;
+        }
+
+    }
 
     public function generateMemberCard(Adherant $member)
     {
@@ -408,4 +502,5 @@ class MembreAttenteResource extends Resource
 
         return response()->download(storage_path('app/public/carte_membre/'.$member->id.'generated_card.jpg'));
     }
+
 }

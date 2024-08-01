@@ -7,6 +7,7 @@ use App\Filament\Resources\CarteMembreResource\RelationManagers;
 use App\Mail\SampleMail2;
 use App\Models\Adherant;
 use App\Models\CarteMembre;
+use App\Models\RoleCommune;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -25,6 +26,7 @@ use Filament\Tables\Enums\ActionsPosition;
 //use Intervention\Image\Facades\Image;
 use http\Url;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Intervention\Image\ImageManagerStatic as Image;
 
@@ -74,7 +76,36 @@ class CarteMembreResource extends Resource
                 //
             ])
             ->modifyQueryUsing(function (\Illuminate\Contracts\Database\Eloquent\Builder $query) {
-                return $query->where('status','=',"APPROUVER");
+
+                $user = Auth::user();
+                if($user->role->name=="Administrateur"){
+                    $req=$query->where('status','=',"APPROUVER");
+                }elseif($user->role->name=="Réseau des Femmes"){
+                    $req= $query->where('status','=',"APPROUVER")
+                        ->where('genre','=',"FEMININ");
+                }elseif ($user->role->name=="Réseau des Enseignants")
+                {
+                    $req= $query->where('status','=',"APPROUVER")
+                        ->where('categorie_socio','=',"Etudiants")
+                        ->orWhere('categorie_socio','=',"Elèves");
+                }elseif ($user->role->name=="Réseau des Elèves et Etudiants"){
+                    $req= $query->where('status','=',"APPROUVER")
+                        ->where('categorie_socio','=',"Etudiants")
+                        ->orWhere('categorie_socio','=',"Elèves");
+                }elseif ($user->role->name=="Réseau des Artisans"){
+                    $req= $query->where('status','=',"APPROUVER")
+                        ->where('categorie_socio','=',"Artisans") ;
+                } elseif (substr($user->role->name,0,3)=="CCE" || substr($user->role->name,0,3)=="CC-"){
+
+                    $roleCom=RoleCommune::where("role_id",'=',$user->role->id)->get();
+                    $listCom=[];
+                    foreach ($roleCom as $rc){array_push($listCom,$rc->commune_id);}
+
+                    $req= $query->where('status','=',"APPROUVER")
+                        ->whereIn('commune_id',$listCom );
+                }
+                return  $req;
+//                return $query->where('status','=',"APPROUVER");
             })
             ->actions([
 

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\AdherantResource\Pages;
 
 use App\Filament\Resources\AdherantResource;
 use App\Models\Adherant;
+use App\Models\RoleCommune;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
@@ -12,6 +13,7 @@ use Filament\Tables\Actions\BulkAction;
 use Illuminate\Database\Eloquent\Builder;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
 use pxlrbt\FilamentExcel\Columns\Column;
 use pxlrbt\FilamentExcel\Exports\ExcelExport;
@@ -61,21 +63,53 @@ class ListAdherants extends ListRecords
 
     public function getTabs(): array
     {
-        return [
-            'Tous'=>Tab::make()
-                ->badge(Adherant::query()
-                    ->where('status', '=', "APPROUVER")
-                    ->count()),
-            'Nouveau membre de la semaine' => Tab::make()
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('created_at', '>=', now()->subWeek()) ->where('status', '=', "APPROUVER"))
-                ->badge(Adherant::query()->where('created_at', '>=', now()->subWeek()) ->where('status', '=', "APPROUVER")->count()),
-            'Nouveau membre du mois' => Tab::make()
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('created_at', '>=', now()->subMonth()) ->where('status', '=', "APPROUVER"))
-                ->badge(Adherant::query()->where('created_at', '>=', now()->subMonth()) ->where('status', '=', "APPROUVER")->count()),
-            "Nouveau membre de l'année" => Tab::make()
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('created_at', '>=', now()->subYear()) ->where('status', '=', "APPROUVER"))
-                ->badge(Adherant::query()->where('created_at', '>=', now()->subYear()) ->where('status', '=', "APPROUVER")->count()),
-        ];
+        $user = Auth::user();
+
+        if($user->role->name=="Administrateur"   ){
+            return [
+                'Tous'=>Tab::make()
+                    ->badge(Adherant::query()
+                        ->where('status', '=', "APPROUVER")
+                        ->count()),
+                'Nouveau membre de la semaine' => Tab::make()
+                    ->modifyQueryUsing(fn (Builder $query) => $query->where('created_at', '>=', now()->subWeek()) ->where('status', '=', "APPROUVER"))
+                    ->badge(Adherant::query()->where('created_at', '>=', now()->subWeek()) ->where('status', '=', "APPROUVER")->count()),
+                'Nouveau membre du mois' => Tab::make()
+                    ->modifyQueryUsing(fn (Builder $query) => $query->where('created_at', '>=', now()->subMonth()) ->where('status', '=', "APPROUVER"))
+                    ->badge(Adherant::query()->where('created_at', '>=', now()->subMonth()) ->where('status', '=', "APPROUVER")->count()),
+                "Nouveau membre de l'année" => Tab::make()
+                    ->modifyQueryUsing(fn (Builder $query) => $query->where('created_at', '>=', now()->subYear()) ->where('status', '=', "APPROUVER"))
+                    ->badge(Adherant::query()->where('created_at', '>=', now()->subYear()) ->where('status', '=', "APPROUVER")->count()),
+            ];
+
+        }elseif (substr($user->role->name,0,3)=="CCE" || substr($user->role->name,0,3)=="CC-"){
+            $roleCom=RoleCommune::where("role_id",'=',$user->role->id)->get();
+            $listCom=[];
+            foreach ($roleCom as $rc){array_push($listCom,$rc->commune_id);}
+            return [
+                'Tous'=>Tab::make()
+                    ->badge(Adherant::query()
+                        ->whereIn('commune_id',$listCom)
+                        ->where('status', '=', "APPROUVER")
+
+                        ->count()),
+                'Nouveau membre de la semaine' => Tab::make()
+                    ->modifyQueryUsing(fn (Builder $query) => $query->where('created_at', '>=', now()->subWeek()) ->where('status', '=', "APPROUVER")->whereIn('commune_id',$listCom) )
+
+                    ->badge(Adherant::query()->where('created_at', '>=', now()->subWeek()) ->where('status', '=', "APPROUVER")->whereIn('commune_id',$listCom)->count()),
+                'Nouveau membre du mois' => Tab::make()
+                    ->modifyQueryUsing(fn (Builder $query) => $query->where('created_at', '>=', now()->subMonth()) ->where('status', '=', "APPROUVER")->whereIn('commune_id',$listCom))
+
+                    ->badge(Adherant::query()->where('created_at', '>=', now()->subMonth()) ->where('status', '=', "APPROUVER")->whereIn('commune_id',$listCom)->count()),
+                "Nouveau membre de l'année" => Tab::make()
+                    ->modifyQueryUsing(fn (Builder $query) => $query->where('created_at', '>=', now()->subYear()) ->where('status', '=', "APPROUVER")->whereIn('commune_id',$listCom))
+
+                    ->badge(Adherant::query()->where('created_at', '>=', now()->subYear()) ->where('status', '=', "APPROUVER")->whereIn('commune_id',$listCom)->count()),
+            ];
+
+        }
+        return [];
+
     }
 
 

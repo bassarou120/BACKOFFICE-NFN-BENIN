@@ -293,7 +293,7 @@
                                 <option value="Ouviriers">Ouviriers</option>
                                 <option value="Agriculteurs exploitants">Agriculteurs exploitants</option>
                                 <option value="Elèves">Elèves </option>
-                                <option value="Elèves">Enseignants </option>
+                                <option value="Enseignants">Enseignants </option>
                                 <option value="Etudiants">Etudiants</option>
                                 <option value="AUTRE">AUTRE</option>
 

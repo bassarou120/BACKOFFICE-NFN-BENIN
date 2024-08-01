@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\RoleCommuneResource\Pages;
 use App\Filament\Resources\RoleCommuneResource\RelationManagers;
+use App\Models\Commune;
 use App\Models\RoleCommune;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -31,13 +32,34 @@ class RoleCommuneResource extends Resource
                     ->relationship('role','name')
                     ->searchable()
                     ->preload() ,
-                Forms\Components\Select::make('commune_ids')
-                    ->multiple()
+                Forms\Components\MultiSelect::make('commune_id')
+                    ->label('Communes')
+                    ->options(fn () => Commune::all()->pluck('libelle', 'id'))
                     ->required()
-                    ->relationship('commune','libelle')
                     ->searchable()
-                    ->preload() ,
+                    ->preload(),
+//                Forms\Components\Select::make('commune')
+//                    ->multiple()
+//                    ->required()
+//                    ->relationship('commune','libelle')
+//                    ->searchable()
+//                    ->preload() ,
             ]);
+    }
+
+    public function save()
+    {
+
+        dd("je suis la ");
+        $data = $this->form->getState();
+
+        $roleCommune = RoleCommune::create([
+            'role_id' => $data['role_id'],
+        ]);
+
+        $roleCommune->communes()->sync($data['commune_ids']);
+
+        // Redirection ou autre action après création
     }
 
     public static function table(Table $table): Table
@@ -81,6 +103,8 @@ class RoleCommuneResource extends Resource
             //
         ];
     }
+
+
 
     public static function getPages(): array
     {

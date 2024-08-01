@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\AdherantController;
+use App\Models\Commune;
 use App\Models\Role;
+use App\Models\RoleCommune;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -41,6 +43,17 @@ Route::get('/generer_les_roles', function () {
 
         echo $i;
     }
+
+    $listCommunes= Commune::all();
+
+
+    foreach ($listCommunes as $com){
+      $rol=  Role::firstOrCreate(['name'=>"CC-".$com->libelle],['name'=>"CC-".$com->libelle]);
+        RoleCommune::firstOrCreate(['role_id'=>$rol->id ,'commune_id'=>$com->id],['role_id'=>$rol->id ,'commune_id'=>$com->id]);
+
+    }
+
+
 
 
 

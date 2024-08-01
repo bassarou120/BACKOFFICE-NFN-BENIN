@@ -8,6 +8,7 @@ use App\Filament\Resources\AdherantResource\RelationManagers;
 use App\Models\Adherant;
 use App\Models\Arrondissement;
 use App\Models\Commune;
+use App\Models\RoleCommune;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Forms;
 
@@ -228,7 +229,7 @@ class AdherantResource extends Resource
                         'NON APPROUVER' => 'NON APPROUVER',
 
 
-                    ]),
+                    ]) ->default('EN ATTENTE DE VALIDATION'),
             ])->columns(3);
     }
 
@@ -403,33 +404,38 @@ class AdherantResource extends Resource
                 ->modifyQueryUsing(function (Builder $query) {
 
                     $user = Auth::user();
-//                    dd($user->role->name);
-                    $req="";
-
-//                    Le Réseau des Femmes de la NFN
-
-                    if($user->role->name="Réseau des Femmes"){
+                    if($user->role->name=="Administrateur"){
+                    $req=$query->where('status','=',"APPROUVER");
+                    }elseif($user->role->name=="Réseau des Femmes"){
                         $req= $query->where('status','=',"APPROUVER")
                                     ->where('genre','=',"FEMININ");
-                    }elseif ($user->role->name="Réseau des Enseignants")
+                    }elseif ($user->role->name=="Réseau des Enseignants")
                     {
                         $req= $query->where('status','=',"APPROUVER")
-                            ->where('categorie_socio','=',"Etudiants")
-                            ->orWhere('categorie_socio','=',"Elèves");
-                    }elseif ($user->role->name="Réseau des Elèves et Etudiants"){
+                            ->where('categorie_socio','=',"Enseignants")
+                             ;
+                    }elseif ($user->role->name=="Réseau des Elèves et Etudiants"){
                         $req= $query->where('status','=',"APPROUVER")
                             ->where('categorie_socio','=',"Etudiants")
                             ->orWhere('categorie_socio','=',"Elèves");
-                    }elseif ($user->role->name="Réseau des Artisans"){
+                    }elseif ($user->role->name=="Réseau des Artisans"){
                         $req= $query->where('status','=',"APPROUVER")
                             ->where('categorie_socio','=',"Artisans") ;
+                    } elseif (substr($user->role->name,0,3)=="CCE" || substr($user->role->name,0,3)=="CC-"){
+
+                        $roleCom=RoleCommune::where("role_id",'=',$user->role->id)->get();
+                        $listCom=[];
+                        foreach ($roleCom as $rc){array_push($listCom,$rc->commune_id);}
+
+                        $req= $query->where('status','=',"APPROUVER")
+                            ->whereIn('commune_id',$listCom );
                     }
 
+//                    elseif (substr($user->role->name,0,3)=="CC-"){
 //
+//                    }
+               return  $req;
 
-
-                    return  $req;
-//                    return $query->where('status','=',"APPROUVER");
                 })
             ->actions([
 //                Tables\Actions\Action::make('activate')

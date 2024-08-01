@@ -6,6 +6,7 @@ use App\Filament\Resources\StatAdherantByCommuneResource\Pages;
 use App\Filament\Resources\StatAdherantByCommuneResource\RelationManagers;
 use App\Models\Adherant;
 use App\Models\Commune;
+use App\Models\RoleCommune;
 use App\Models\StatAdherantByCommune;
 use App\Models\Statcommune;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -17,6 +18,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
 
 class StatAdherantByCommuneResource extends Resource
@@ -47,31 +49,147 @@ class StatAdherantByCommuneResource extends Resource
     public static function table(Table $table): Table
     {
 
+        Statcommune:: query()->delete();
+        $user = Auth::user();
+        if($user->role->name=="Administrateur") {
 
-        $lisComm=Commune::all();
+            $lisComm = Commune::all();
 
-        foreach ($lisComm as $com){
-
-
-//            if (Adherant::where('commune_id',$com->id)->count()!=0){
+            foreach ($lisComm as $com) {
                 Statcommune::firstOrCreate(
                     ['commune' => $com->libelle],
                     [
-                        'commune'=>$com->libelle,
-                        'total_adherant'=>Adherant::where('commune_id',$com->id)->count(),
-                        'homme'=>Adherant::where('commune_id',$com->id)->where('genre',"MASCULIN")->count(),
-                        'femme'=>Adherant::where('commune_id',$com->id)->where('genre',"FEMININ")->count(),
-                        'cep'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"CEP")->count(),
-                        'bepc'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"BEPC")->count(),
-                        'bac'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"BAC")->count(),
-                        'licence'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"LICENCE")->count(),
-                        'master'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"MASTER")->count(),
-                        'doctorat'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"DOCTORAT")->count(),
-                        'autre'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"AUTRE")->count()
+                        'commune' => $com->libelle,
+                        'total_adherant' => Adherant::where('commune_id', $com->id)->count(),
+                        'homme' => Adherant::where('commune_id', $com->id)->where('genre', "MASCULIN")->count(),
+                        'femme' => Adherant::where('commune_id', $com->id)->where('genre', "FEMININ")->count(),
+                        'cep' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "CEP")->count(),
+                        'bepc' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "BEPC")->count(),
+                        'bac' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "BAC")->count(),
+                        'licence' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "LICENCE")->count(),
+                        'master' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "MASTER")->count(),
+                        'doctorat' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "DOCTORAT")->count(),
+                        'autre' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "AUTRE")->count()
                     ]
                 );
-//            }
+            }
+        }
+        elseif (substr($user->role->name,0,3)=="CCE" || substr($user->role->name,0,3)=="CC-"){
+            $roleCom=RoleCommune::where("role_id",'=',$user->role->id)->get();
+            $listCom=[];
+            foreach ($roleCom as $rc){array_push($listCom,$rc->commune_id);}
 
+
+            $lisComm = Commune::whereIn("id",$listCom)->get();
+//            dd($lisComm);
+
+            foreach ($lisComm as $com) {
+                Statcommune::firstOrCreate(
+                    ['commune' => $com->libelle],
+                    [
+                        'commune' => $com->libelle,
+                        'total_adherant' => Adherant::where('commune_id', $com->id)->count(),
+                        'homme' => Adherant::where('commune_id', $com->id)->where('genre', "MASCULIN")->count(),
+                        'femme' => Adherant::where('commune_id', $com->id)->where('genre', "FEMININ")->count(),
+                        'cep' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "CEP")->count(),
+                        'bepc' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "BEPC")->count(),
+                        'bac' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "BAC")->count(),
+                        'licence' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "LICENCE")->count(),
+                        'master' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "MASTER")->count(),
+                        'doctorat' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "DOCTORAT")->count(),
+                        'autre' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "AUTRE")->count()
+                    ]
+                );
+            }
+
+        }
+        elseif($user->role->name=="Réseau des Femmes"){
+            $lisComm = Commune::all();
+
+            foreach ($lisComm as $com) {
+                Statcommune::firstOrCreate(
+                    ['commune' => $com->libelle],
+                    [
+                        'commune' => $com->libelle,
+                        'total_adherant' => Adherant::where('commune_id', $com->id)->count(),
+                        'homme' => Adherant::where('commune_id', $com->id)->where('genre', "MASCULIN")->count(),
+                        'femme' => Adherant::where('commune_id', $com->id)->where('genre', "FEMININ")->count(),
+                        'cep' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "CEP")->count(),
+                        'bepc' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "BEPC")->count(),
+                        'bac' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "BAC")->count(),
+                        'licence' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "LICENCE")->count(),
+                        'master' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "MASTER")->count(),
+                        'doctorat' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "DOCTORAT")->count(),
+                        'autre' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "AUTRE")->count()
+                    ]
+                );
+            }
+        }
+        elseif ($user->role->name=="Réseau des Enseignants"){
+            $lisComm = Commune::all();
+
+            foreach ($lisComm as $com) {
+                Statcommune::firstOrCreate(
+                    ['commune' => $com->libelle],
+                    [
+                        'commune' => $com->libelle,
+                        'total_adherant' => Adherant::where('commune_id', $com->id)->count(),
+                        'homme' => Adherant::where('commune_id', $com->id)->where('genre', "MASCULIN")->count(),
+                        'femme' => Adherant::where('commune_id', $com->id)->where('genre', "FEMININ")->count(),
+                        'cep' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "CEP")->count(),
+                        'bepc' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "BEPC")->count(),
+                        'bac' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "BAC")->count(),
+                        'licence' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "LICENCE")->count(),
+                        'master' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "MASTER")->count(),
+                        'doctorat' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "DOCTORAT")->count(),
+                        'autre' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "AUTRE")->count()
+                    ]
+                );
+            }
+        }
+        elseif ($user->role->name=="Réseau des Elèves et Etudiants"){
+            $lisComm = Commune::all();
+
+            foreach ($lisComm as $com) {
+                Statcommune::firstOrCreate(
+                    ['commune' => $com->libelle],
+                    [
+                        'commune' => $com->libelle,
+                        'total_adherant' => Adherant::where('commune_id', $com->id)->count(),
+                        'homme' => Adherant::where('commune_id', $com->id)->where('genre', "MASCULIN")->count(),
+                        'femme' => Adherant::where('commune_id', $com->id)->where('genre', "FEMININ")->count(),
+                        'cep' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "CEP")->count(),
+                        'bepc' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "BEPC")->count(),
+                        'bac' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "BAC")->count(),
+                        'licence' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "LICENCE")->count(),
+                        'master' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "MASTER")->count(),
+                        'doctorat' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "DOCTORAT")->count(),
+                        'autre' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "AUTRE")->count()
+                    ]
+                );
+            }
+        }
+        elseif ($user->role->name=="Réseau des Artisans"){
+            $lisComm = Commune::all();
+
+            foreach ($lisComm as $com) {
+                Statcommune::firstOrCreate(
+                    ['commune' => $com->libelle],
+                    [
+                        'commune' => $com->libelle,
+                        'total_adherant' => Adherant::where('commune_id', $com->id)->count(),
+                        'homme' => Adherant::where('commune_id', $com->id)->where('genre', "MASCULIN")->count(),
+                        'femme' => Adherant::where('commune_id', $com->id)->where('genre', "FEMININ")->count(),
+                        'cep' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "CEP")->count(),
+                        'bepc' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "BEPC")->count(),
+                        'bac' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "BAC")->count(),
+                        'licence' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "LICENCE")->count(),
+                        'master' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "MASTER")->count(),
+                        'doctorat' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "DOCTORAT")->count(),
+                        'autre' => Adherant::where('commune_id', $com->id)->where('niveau_instruction', "AUTRE")->count()
+                    ]
+                );
+            }
         }
 
 
@@ -166,6 +284,11 @@ class StatAdherantByCommuneResource extends Resource
 
 
             ])
+            ->modifyQueryUsing(function (\Illuminate\Contracts\Database\Eloquent\Builder $query) {
+                return $query->where('total_adherant','!=',0)
+                    ;
+
+            })
             ->filters([
 
 
