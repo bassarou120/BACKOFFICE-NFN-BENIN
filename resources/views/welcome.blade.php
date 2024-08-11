@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Adhérer à la NFN</title>
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 {{--    <link href="css/styles.css" rel="stylesheet">--}}
 
     <style>
@@ -117,13 +117,13 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item active">
-                    <a class="nav-link" href="#">Accueil  </a>
+                    <a class="nav-link" target="_blank" href="https://nfn.bj/">Accueil  </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#about">À propos</a>
+                    <a class="nav-link" target="_blank" href="https://nfn.bj/qui-sommes-nous/">Qui sommes-nous?</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#contact">Contact</a>
+                    <a class="nav-link" target="_blank"  href="https://nfn.bj/nous-contacter/">Contact</a>
                 </li>
             </ul>
         </div>
@@ -229,7 +229,7 @@
                         <div class="col">
                             <label for="departement-liste" class="form-label">Departement</label>
                             <select id="departement-liste" name="departement_id" class="form-select" aria-label="Default select example" required>
-                                <option selected>Choisir departement</option>
+                                <option value="" selected>Choisir departement</option>
                                 @foreach($listeDepartemnt as $dep)
                                     <option value="{{$dep->id}}">{{$dep->libelle}}</option>
                                 @endforeach
@@ -367,9 +367,9 @@
 </div>
 
 <!-- Footer -->
-<footer class="text-muted py-5 bg-dark text-white">
+<footer class="text-muted py-5 bg-black text-white">
     <div class="container text-center">
-        <p class="mb-1">&copy; 2024 FNF BENIN</p>
+        <p class="mb-1 text-white">&copy; 2024 FNF BENIN</p>
         <ul class="list-inline">
             <li class="list-inline-item"><a href="#" class="text-white">Accueil</a></li>
             <li class="list-inline-item"><a href="#about" class="text-white">À propos</a></li>
@@ -377,6 +377,8 @@
         </ul>
     </div>
 </footer>
+
+{{--<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>--}}
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 {{--    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>--}}
@@ -390,6 +392,8 @@
 
 
     $(document).ready(function () {
+
+
 
         $('#show-alert').hide();
         $('#show-alert2').hide();
@@ -458,6 +462,8 @@
                             });
 
                             showSuccessAnimation();
+
+                            document.getElementById('overlay').style.display='none';
                         } else {
                             document.getElementById('overlay').style.display = 'none';
                             $('#message').html('<p>Erreur lors de la soumission du formulaire.</p>');
@@ -478,6 +484,7 @@
                         $('#show-alert').show();
                         $('#message').html('<p>Erreur lors de la soumission du formulaire.</p>');
                         $('#message').focus(); // Set focus to input2
+                        document.getElementById('overlay').style.display='none';
                     }
                 });
             } else {
@@ -513,26 +520,45 @@
         $('#email').on('change', function() {
 
            // alert($('#email').val())
+            let formData = new FormData();
 
-            // document.getElementById('overlay').style.display = 'flex';
-
+            formData.append('email',$('#email').val());
+        document.getElementById('overlay').style.display = 'flex';
+            var csrfToken = '{{csrf_token()}}';
+            console.log(csrfToken); // Log the token to ensure it's correct
 
             $.ajax({
                 url: "{{url('check_email')}}",
                 type: "POST",
-                data: {
-                    email:$('#email').val(),
-                    _token: '{{csrf_token()}}'
-
+                data: formData,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
                 },
                 processData: false,
                 contentType: false,
                 dataType: 'json',
 
-                success: function (result) {
+                success: function(result) {
+                    console.log("Success:", result);
 
 
-                    alert("dd");
+                    if (result.data==='non'){
+                        document.getElementById('overlay').style.display='none';
+                    }else {
+                        alert(result.message);
+                        document.getElementById('overlay').style.display='none';
+                    }
+
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error:', error);
+                    console.error('Status:', status);
+                    console.error('Response:', xhr.responseText);
+                  // alert("An error occurred: " + xhr.responseText);
+
+                    console.log("Success:", xhr.responseText);
+                    alert("Desolé ce email est dejà utilisé");
+                    document.getElementById('overlay').style.display='none';
                 }
 
 
@@ -718,7 +744,7 @@
 
 </script>
 
- >
+
 
 
 

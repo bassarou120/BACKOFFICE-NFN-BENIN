@@ -34,17 +34,19 @@ class UserResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
+        return $form->schema([
                 Forms\Components\TextInput::make('name')
                     ->required(),
+
                 Forms\Components\TextInput::make('email')
                     ->email()
                     ->required()
                     ->unique(),
+
+
                 Forms\Components\Select::make('role_id')
                     ->label('Role')
-//                    ->relationship('commune','libelle')
+                    //  ->relationship('commune','libelle')
                     ->options(fn (Get $get): Collection => Role::query()
 
                         ->pluck("name","id")
@@ -72,9 +74,7 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
-                //
-
-                Tables\Columns\TextColumn::make('name')
+            Tables\Columns\TextColumn::make('name')
             ->sortable()
             ->searchable(),
                 Tables\Columns\TextColumn::make('email')
@@ -82,17 +82,11 @@ class UserResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('Role')
                     ->sortable()
-                    ->searchable()
+//                    ->searchable()
                     ->getStateUsing(function ($record) {
-
 //                        dd($record->role_id);
-
 //                        $rol=Role::find($record->role_id);
-
                         $listComme=Role::find($record->role_id)->name;
-
-
-
                         return  $listComme;
                     }),
 

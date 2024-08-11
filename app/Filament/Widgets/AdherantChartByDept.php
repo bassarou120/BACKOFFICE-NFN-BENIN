@@ -27,7 +27,7 @@ class AdherantChartByDept extends ChartWidget
 
             array_push($libeleListe, $dep->libelle);
 
-            array_push($dataListe,Adherant::where('departement_id',$dep->id)->count());
+            array_push($dataListe,Adherant::where('departement_id',$dep->id)->where('status','=',"APPROUVER")->count());
 
         }
 

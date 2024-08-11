@@ -49,16 +49,16 @@ class StatAdherantByQuartierResource extends Resource
                 ['quartier' => $com->libelle],
                 [
                     'quartier'=>$com->libelle,
-                    'total_adherant'=>Adherant::where('quartier_id',$com->id)->count(),
-                    'homme'=>Adherant::where('commune_id',$com->id)->where('genre',"MASCULIN")->count(),
-                    'femme'=>Adherant::where('commune_id',$com->id)->where('genre',"FEMININ")->count(),
-                    'cep'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"CEP")->count(),
-                    'bepc'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"BEPC")->count(),
-                    'bac'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"BAC")->count(),
-                    'licence'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"LICENCE")->count(),
-                    'master'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"MASTER")->count(),
-                    'doctorat'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"DOCTORAT")->count(),
-                    'autre'=>Adherant::where('commune_id',$com->id)->where('niveau_instruction',"AUTRE")->count()
+                    'total_adherant'=>Adherant::where('quartier_id',$com->id)->where('status','=',"APPROUVER")->count(),
+                    'homme'=>Adherant::where('quartier_id',$com->id)->where('genre',"MASCULIN")->where('status','=',"APPROUVER")->count(),
+                    'femme'=>Adherant::where('quartier_id',$com->id)->where('genre',"FEMININ")->where('status','=',"APPROUVER")->count(),
+                    'cep'=>Adherant::where('quartier_id',$com->id)->where('niveau_instruction',"CEP")->where('status','=',"APPROUVER")->count(),
+                    'bepc'=>Adherant::where('quartier_id',$com->id)->where('niveau_instruction',"BEPC")->where('status','=',"APPROUVER")->count(),
+                    'bac'=>Adherant::where('quartier_id',$com->id)->where('niveau_instruction',"BAC")->where('status','=',"APPROUVER")->count(),
+                    'licence'=>Adherant::where('quartier_id',$com->id)->where('niveau_instruction',"LICENCE")->where('status','=',"APPROUVER")->count(),
+                    'master'=>Adherant::where('quartier_id',$com->id)->where('niveau_instruction',"MASTER")->where('status','=',"APPROUVER")->count(),
+                    'doctorat'=>Adherant::where('quartier_id',$com->id)->where('niveau_instruction',"DOCTORAT")->where('status','=',"APPROUVER")->count(),
+                    'autre'=>Adherant::where('quartier_id',$com->id)->where('niveau_instruction',"AUTRE")->where('status','=',"APPROUVER")->count()
                 ]
             );
 //            }

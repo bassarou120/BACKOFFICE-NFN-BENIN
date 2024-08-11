@@ -237,6 +237,9 @@ class AdherantResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('identifiant')
+
+                    ->searchable(),
                 Tables\Columns\ImageColumn ::make('photo_identite')
                 ->label("Photo")
                     ->width(60)

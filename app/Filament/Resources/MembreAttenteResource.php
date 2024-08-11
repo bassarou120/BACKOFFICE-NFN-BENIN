@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+
 use App\Filament\Exports\AdherantExporter;
 use App\Filament\Resources\MembreAttenteResource\Pages;
 use App\Filament\Resources\MembreAttenteResource\RelationManagers;
@@ -11,6 +12,7 @@ use App\Models\Arrondissement;
 use App\Models\Commune;
 use App\Models\MembreAttente;
 use App\Models\RoleCommune;
+use App\Models\User;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -167,6 +169,9 @@ class MembreAttenteResource extends Resource
         return $table
             ->columns([
 
+                Tables\Columns\TextColumn::make('identifiant')
+
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('status')
 
                     ->searchable(),
@@ -183,7 +188,9 @@ class MembreAttenteResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('telephone')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('email'),
+                Tables\Columns\TextColumn::make('email')
+                    ->sortable()
+                    ->searchable(),
 
                 Tables\Columns\TextColumn::make('categorie_socio')
                     ->label('Catégorie socio professionelle')
@@ -212,11 +219,12 @@ class MembreAttenteResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
                 Tables\Columns\TextColumn::make('arrondissement.libelle')
-
+                    ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
                 Tables\Columns\TextColumn::make('quartier.libelle')
                     ->toggleable(isToggledHiddenByDefault: true)
+                    ->searchable()
                     ->sortable(),
 
 
@@ -305,15 +313,10 @@ class MembreAttenteResource extends Resource
                             $content = [
                                 'subject' => 'Félicitations pour votre adhésion au parti FNF !',
                                 'body' =>"Cher(e)". $record->prenom." ".  $record->nom." ,<br>
-                            <p>Nous sommes ravis de vous informer que votre soumission en ligne pour devenir membre du parti FNF a été examinée et validée avec succès. À partir d'aujourd'hui, vous faites officiellement partie de notre parti.</p>
-
-                            <p> Nous tenons à vous féliciter pour votre engagement et à vous remercier pour la confiance que vous nous accordez. Votre adhésion témoigne de votre soutien à nos valeurs et à nos objectifs communs.</p>
-
-                            <p> En tant que membre du parti FNF, vous aurez l'opportunité de contribuer activement à nos initiatives et de participer à nos événements et activités. Nous sommes convaincus que votre engagement et vos idées apporteront une grande valeur à notre communauté.</p>
-
-                            <p> Pour toute question ou pour plus d'informations sur vos prochains pas en tant que membre, n'hésitez pas à nous contacter à l'adresse suivante : [Adresse email de contact].</p>
-
-                          <p>   Encore une fois, félicitations et bienvenue parmi nous !</p>
+                            <p> Votre adhésion à la NFN est définitivement validée.
+                                Pour obtenir votre carte de membre , cliquez sur https://nfn.bj/fait-un-don/ (coût 200f CFA)
+                                Pour plus d’informations, contactez le +22990430506 (appel et WhatsApp)
+                                </p>
 
                             Cordialement,
 
@@ -326,6 +329,28 @@ class MembreAttenteResource extends Resource
 
                             $record->status="EN ATTENTE DE CONFIRMATION";
                             $record->save();
+
+                            $contentAdminAdherant = [
+                                'subject' => 'Confirmation de votre adhésion au parti FNF',
+                                'body' =>" Demande d’adhésion N°". $record->identifiant." pré-validée par le CCE . <br>
+                                        Votre validation est requise dans les 72h."
+
+                            ];
+
+                            $users = User::with('role')->get();
+                            $listAdminAdherant =[];
+
+
+
+                            foreach ($users as  $user){
+
+                                if ($user->role !=null  && $user->role->name=="Administrateur"){
+                                    array_push($listAdminAdherant,$user->email);
+                                }
+
+                            }
+
+                            Mail::to($listAdminAdherant)->send(new SampleMail2($contentAdminAdherant));
 
                         }
 

@@ -55,6 +55,9 @@ class CarteMembreResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('identifiant')
+
+                    ->searchable(),
                 Tables\Columns\ImageColumn ::make('carte_membre')
                     ->label("Carte")
                     ->defaultImageUrl(url('/images/logo.png'))
@@ -146,7 +149,7 @@ class CarteMembreResource extends Resource
 
                         // Add nom
                         $img->text($record->nom, 360, 645, function($font) {
-                            $font->file(storage_path('app/public/carte_template/Montserrat-Semibold.ttf'));
+                            $font->file(storage_path('app/public/carte_template/Montserrat-MediumItalic.ttf'));
                             $font->size(55);
                             $font->color('#000000');
                             $font->align('center');
@@ -161,18 +164,17 @@ class CarteMembreResource extends Resource
 
 
 
-                        $img->text("Carte de membre N° : 00".$record->id, 850, 200, function($font) {
+                        $img->text("Carte de membre N° : ".$record->identifiant, 850, 200, function($font) {
                             $font->file(storage_path('app/public/carte_template/Montserrat-MediumItalic.ttf'));
-                            $font->size(50);
+                         $font->size(40);
                             $font->color('#000000');
                             $font->align('left');
                             $font->valign('top');
-
                         });
 
                         $img->text("Expire le  : ". Carbon::now()->addYears(5)->format('d-M-Y'), 850, 280, function($font) {
                             $font->file(storage_path('app/public/carte_template/Montserrat-MediumItalic.ttf'));
-                            $font->size(50);
+                         $font->size(40);
                             $font->color('#000000');
                             $font->align('left');
                             $font->valign('top');
@@ -182,7 +184,7 @@ class CarteMembreResource extends Resource
 
                         $img->text("Commune : ".$record->commune->libelle , 850, 360, function($font) {
                             $font->file(storage_path('app/public/carte_template/Montserrat-MediumItalic.ttf'));
-                            $font->size(50);
+                         $font->size(40);
                             $font->color('#000000');
                             $font->align('left');
                             $font->valign('top');
@@ -191,7 +193,7 @@ class CarteMembreResource extends Resource
 
                         $img->text("Arrondissement : ".$record->arrondissement->libelle , 850, 440, function($font) {
                             $font->file(storage_path('app/public/carte_template/Montserrat-MediumItalic.ttf'));
-                            $font->size(50);
+                         $font->size(40);
                             $font->color('#000000');
                             $font->align('left');
                             $font->valign('top');
@@ -200,7 +202,7 @@ class CarteMembreResource extends Resource
 
                         $img->text("Quartier / village : ".$record->quartier->libelle , 850, 520, function($font) {
                             $font->file(storage_path('app/public/carte_template/Montserrat-MediumItalic.ttf'));
-                            $font->size(50);
+                         $font->size(40);
                             $font->color('#000000');
                             $font->align('left');
                             $font->valign('top');
@@ -209,7 +211,7 @@ class CarteMembreResource extends Resource
 
                         $img->text("Profession : ".$record->activite_profession  , 850, 600, function($font) {
                             $font->file(storage_path('app/public/carte_template/Montserrat-MediumItalic.ttf'));
-                            $font->size(50);
+                         $font->size(40);
                             $font->color('#000000');
                             $font->align('left');
                             $font->valign('top');
@@ -218,7 +220,7 @@ class CarteMembreResource extends Resource
 
                         $img->text("Téléphone : +229".$record->telephone  , 850, 680, function($font) {
                             $font->file(storage_path('app/public/carte_template/Montserrat-MediumItalic.ttf'));
-                            $font->size(50);
+                         $font->size(40);
                             $font->color('#000000');
                             $font->align('left');
                             $font->valign('top');
@@ -506,7 +508,7 @@ class CarteMembreResource extends Resource
 
                             // Add nom
                             $img->text($record->nom, 360, 645, function($font) {
-                                $font->file(storage_path('app/public/carte_template/Montserrat-Semibold.ttf'));
+                                $font->file(storage_path('app/public/carte_template/Montserrat-MediumItalic.ttf'));
                                 $font->size(55);
                                 $font->color('#000000');
                                 $font->align('center');
@@ -521,9 +523,9 @@ class CarteMembreResource extends Resource
 
 
 
-                            $img->text("Carte de membre N° : 00".$record->id, 850, 200, function($font) {
+                            $img->text("Carte de membre N° : ".$record->identifiant, 850, 200, function($font) {
                                 $font->file(storage_path('app/public/carte_template/Montserrat-MediumItalic.ttf'));
-                                $font->size(50);
+                             $font->size(40);
                                 $font->color('#000000');
                                 $font->align('left');
                                 $font->valign('top');
@@ -532,7 +534,7 @@ class CarteMembreResource extends Resource
 
                             $img->text("Expire le  : ". Carbon::now()->addYears(5)->format('d-M-Y'), 850, 280, function($font) {
                                 $font->file(storage_path('app/public/carte_template/Montserrat-MediumItalic.ttf'));
-                                $font->size(50);
+                             $font->size(40);
                                 $font->color('#000000');
                                 $font->align('left');
                                 $font->valign('top');
@@ -542,7 +544,7 @@ class CarteMembreResource extends Resource
 
                             $img->text("Commune : ".$record->commune->libelle , 850, 360, function($font) {
                                 $font->file(storage_path('app/public/carte_template/Montserrat-MediumItalic.ttf'));
-                                $font->size(50);
+                             $font->size(40);
                                 $font->color('#000000');
                                 $font->align('left');
                                 $font->valign('top');
@@ -551,7 +553,7 @@ class CarteMembreResource extends Resource
 
                             $img->text("Arrondissement : ".$record->arrondissement->libelle , 850, 440, function($font) {
                                 $font->file(storage_path('app/public/carte_template/Montserrat-MediumItalic.ttf'));
-                                $font->size(50);
+                             $font->size(40);
                                 $font->color('#000000');
                                 $font->align('left');
                                 $font->valign('top');
@@ -560,7 +562,7 @@ class CarteMembreResource extends Resource
 
                             $img->text("Quartier / village : ".$record->quartier->libelle , 850, 520, function($font) {
                                 $font->file(storage_path('app/public/carte_template/Montserrat-MediumItalic.ttf'));
-                                $font->size(50);
+                             $font->size(40);
                                 $font->color('#000000');
                                 $font->align('left');
                                 $font->valign('top');
@@ -569,7 +571,7 @@ class CarteMembreResource extends Resource
 
                             $img->text("Profession : ".$record->activite_profession  , 850, 600, function($font) {
                                 $font->file(storage_path('app/public/carte_template/Montserrat-MediumItalic.ttf'));
-                                $font->size(50);
+                             $font->size(40);
                                 $font->color('#000000');
                                 $font->align('left');
                                 $font->valign('top');
@@ -578,7 +580,7 @@ class CarteMembreResource extends Resource
 
                             $img->text("Téléphone : +229".$record->telephone  , 850, 680, function($font) {
                                 $font->file(storage_path('app/public/carte_template/Montserrat-MediumItalic.ttf'));
-                                $font->size(50);
+                             $font->size(40);
                                 $font->color('#000000');
                                 $font->align('left');
                                 $font->valign('top');

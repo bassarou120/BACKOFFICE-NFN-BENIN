@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+
 use App\Http\Resources\PostResource;
 use App\Mail\SampleMail2;
 use App\Models\Adherant;
@@ -9,12 +10,16 @@ use App\Models\Arrondissement;
 use App\Models\Commune;
 use App\Models\Departement;
 use App\Models\Quartier;
+use App\Models\RoleCommune;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Mail;
 
 class AdherantController extends Controller
 {
+
+    public $numCirconsciprtion='';
     /**
      * Display a listing of the resource.
      */
@@ -23,14 +28,50 @@ class AdherantController extends Controller
         //
     }
 
+
+
+
+
+    public function check_num_id(Request $request){
+        $a= Adherant::where('identifiant','=',$request->identifiant )->first() ;
+
+        if ($a ==null ){
+            return new PostResource(true, "Numéro d'adherent non valide",null);
+
+        }else{
+            return new PostResource(true, 'valide', 'valide' );
+        }
+
+
+    }
+    public function check_status_id(Request $request){
+
+
+        $a= Adherant::where('identifiant','=',$request->identifiant )->first() ;
+
+
+        if ($a ==null ){
+
+            return new PostResource(true, "Ce numero d'adhession n'est pas valide","num");
+        }
+        else{
+
+            return new PostResource(true, $a->status,$a);
+
+        }
+
+    }
+
+
     public function check_email(Request $request){
 
-       $a= Adherant::where('email',$request->email )->get();
+       $a= Adherant::where('email','=',$request->email )->get();
 
-        if ($a){
-            return "oui";
+        if (sizeof($a)==0){
+            return new PostResource(true, "Ok","non");
+
         }else{
-            return "non";
+            return new PostResource(true, 'email existe dejà', 'oui' );
         }
 
     }
@@ -103,6 +144,8 @@ class AdherantController extends Controller
 
         try {
 
+
+
             $adherant=Adherant::updateOrCreate(
                 ['id'=>$id],
                 [
@@ -123,7 +166,8 @@ class AdherantController extends Controller
                     'genre'=>$request->genre,
                     'photo_identite'=>"-",
                     'piece_photo_identite'=>"-",
-                    'categorie_socio'=>$request->categorie_socio
+                    'categorie_socio'=>$request->categorie_socio,
+                    'status'=>'EN ATTENTE DE VALIDATION'
 
                 ]);
 
@@ -164,28 +208,87 @@ class AdherantController extends Controller
 
             }
 
-            $content = [
+
+
+            $com=Commune::find($request->commune_id);
+            $rc=RoleCommune::where('commune_id',$request->commune_id)->get();
+            $numCirconsciprtin='';
+            foreach ($rc as $r){
+
+                if( $r->role!=null && substr($r->role->name,0,3)=="CCE" ){
+                    $numCirconsciprtin= substr($r->role->name,4)   ;
+                }
+            }
+
+            $identifiant= str_pad($numCirconsciprtin, 2, '0', STR_PAD_LEFT)
+                .strtoupper(substr($com->libelle, 0, 3))
+                .str_pad($adherant->id, 5, '0', STR_PAD_LEFT);
+
+
+            $adherant->identifiant=$identifiant;
+            $adherant->save();
+
+
+            $url=route('check_status');
+            $contentAdminAdherant = [
                 'subject' => 'Confirmation de votre adhésion au parti FNF',
                 'body' =>"Cher(e)". $request->prenom." ".  $request->nom." ,<br>
-            Nous avons bien reçu votre demande d'adhésion au parti NFN via notre formulaire en ligne.<br>
-
-            Votre adhésion a été enregistrée avec succès. Un membre de notre administration va procéder à la vérification des informations que vous avez fournies. Une fois cette vérification terminée, votre adhésion sera validée et nous mettrons à votre disposition votre carte de membre.
-            <br>
-            Nous vous remercions pour votre confiance et votre engagement envers le parti NFN. Votre participation est essentielle pour nous aider à atteindre nos objectifs communs et à promouvoir nos valeurs.
-            <br>
-            Nous restons à votre disposition pour toute question ou information supplémentaire.<br>
-
-
-                Cordialement,
-
-
-                 <br>»
+             Bravo, Vous venez de soumettre avec succès votre demande d’adhésion à la NFN. <br>
+             Pour connaître le niveau du traitement de votre dossier d’adhésion, cliquez <a href='".$url."/".$identifiant."'>ICI</a>   <br>
+              et taper votre numéro d’adhésion  <b> :".$identifiant. " </b> ou contactez le +22990430506 (appel et WhatsApp)
+                 <br>
                 "
             ];
 
-            Mail::to([$request->email ])->send(new SampleMail2($content));
+            $users = User::with('role')->get();
+             $listAdminAdherant =[];
+             $listAdminOnly  =[];
+            array_push($listAdminAdherant,$request->email);
 
 
+            foreach ($users as  $user){
+
+                if ($user->role !=null  && $user->role->name=="Administrateur"){
+                    array_push($listAdminAdherant,$user->email);
+                    array_push($listAdminOnly,$user->email);
+                }
+
+            }
+
+            Mail::to($listAdminAdherant)->send(new SampleMail2($contentAdminAdherant));
+
+            $contentCCE= [
+                'subject' => 'Confirmation de votre adhésion au parti FNF',
+                'body' =>"Demande d’adhésion N°: ".$identifiant. " enregistrée. <br>
+                        Votre pré-validation est requise dans un délai de 72h.
+                 <br>
+                "
+            ];
+
+
+            $this->numCirconsciprtion=$numCirconsciprtin;
+            $users1 =  User::with(['role'=>function($re){
+                return $re->where('name',"CCE-". $this->numCirconsciprtion);
+
+            }])->get();
+
+
+            $listAdminCCE=[];
+
+
+
+                        foreach ($users1 as  $user){
+                            if ($user->role !=null ){
+                                array_push($listAdminCCE,$user->email);
+                            }
+                        }
+
+
+                        if (sizeof($listAdminCCE)==0){
+                            Mail::to($listAdminOnly)->send(new SampleMail2($contentCCE));
+                        }else{
+                            Mail::to($listAdminCCE)->send(new SampleMail2($contentCCE));
+                        }
 
 
 
