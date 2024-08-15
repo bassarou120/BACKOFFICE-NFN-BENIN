@@ -20,6 +20,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 
 
+
+
 use Filament\Tables\Enums\ActionsPosition;
 
 
@@ -29,6 +31,10 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Intervention\Image\ImageManagerStatic as Image;
+
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
+
 
 
 class CarteMembreResource extends Resource
@@ -228,25 +234,50 @@ class CarteMembreResource extends Resource
                         });
 
 
+                        // Generate QR Code
+                        $qrCode = QrCode::create(url('verify_carte').'/'.$record->identifiant)
+                            ->setSize(95);
+
+                        $writer = new PngWriter();
+                        $result = $writer->write($qrCode);
+
+                        $qrCodePath = storage_path('app/public/carte_template/qr-code.png');
+                        $result->saveToFile($qrCodePath);
+
+                        // Insert QR Code into image
+                        $qrCodeImage = Image::make($qrCodePath);
+                        $img->insert($qrCodeImage, 'top-left', 320  , 715);
+
+
+
+//                        // Generate QR Code
+//                        $qrCode = QrCode::create('Données à encoder pour le QR Code')
+//                            ->setSize(100);
+//
+//                        $writer = new PngWriter();
+//                        $result = $writer->write($qrCode);
+//
+//                        $img->insert($result, 'top-left', 850, 750);
+
+//                        $qrCodePath = storage_path('app/public/carte_template/qr-code.png');
+//                        $result->saveToFile($qrCodePath);
+
+
+
+//                        // Generate QR Code
+//                        $qrCodePath = storage_path('app/public/carte_template/qr-code.jpg');
+//                        QrCode::format('png')->size(100)->generate('Données à encoder pour le QR Code', $qrCodePath);
+////                        You need to install the imagick extension to use this back end
+//                        // Insert QR Code
+//                        $qrCode = Image::make($qrCodePath);
+//                        $img->insert($qrCode, 'top-left', 850, 750); // Adjust position as needed
+//                        // Adjust position as needed
+//
 
 
 
 
-                        // Add ima
-//                        $img->text('A', 372, 272, function($font) {
-////                            $font->file(public_path('fonts/YourFont.ttf'));
-//                            $font->size(18);
-//                            $font->color('#000000');
-//                            $font->align('left');
-//                            $font->valign('top');
-//                        });
-//                        $img->text('N° 01', 400, 200, function($font) {
-////                            $font->file(public_path('fonts/YourFont.ttf'));
-//                            $font->size(18);
-//                            $font->color('#000000');
-//                            $font->align('left');
-//                            $font->valign('top');
-//                        });
+
 
                         // Save the image
                         $img->save(storage_path('app/public/carte_membre/'.$record->id.'-'.$record->nom.'-carte.jpg'));
@@ -586,6 +617,22 @@ class CarteMembreResource extends Resource
                                 $font->valign('top');
 
                             });
+
+                            // Generate QR Code
+                            $qrCode = QrCode::create(url('verify_carte').'/'.$record->identifiant)
+                                ->setSize(95);
+
+                            $writer = new PngWriter();
+                            $result = $writer->write($qrCode);
+
+                            $qrCodePath = storage_path('app/public/carte_template/qr-code.png');
+                            $result->saveToFile($qrCodePath);
+
+                            // Insert QR Code into image
+                            $qrCodeImage = Image::make($qrCodePath);
+                            $img->insert($qrCodeImage, 'top-left', 320  , 715);
+
+
 
                             // Save the image
                             $img->save(storage_path('app/public/carte_membre/'.$record->id.'-'.$record->nom.'-carte.jpg'));

@@ -248,12 +248,14 @@ class AdherantResource extends Resource
                 Tables\Columns\TextColumn::make('nom')
                      ->sortable()
                     ->searchable(),
+
                 Tables\Columns\TextColumn::make('prenom')
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('telephone')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('email'),
+                Tables\Columns\TextColumn::make('email')
+                ,
 
 
                 Tables\Columns\TextColumn::make('date_naissance')

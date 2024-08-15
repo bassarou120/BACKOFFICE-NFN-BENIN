@@ -12,6 +12,7 @@ class Adherant extends Model
 
     protected $guarded=[];
 
+
     public function departement(): BelongsTo
     {
         return $this->belongsTo(Departement::class);
@@ -34,10 +35,7 @@ class Adherant extends Model
     }
 
 
-    public function activate(){
-
-
-    }
+    public function activate(){}
 
 
 

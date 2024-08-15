@@ -3,6 +3,7 @@
 
 use App\Http\Controllers\AdherantController;
 use App\Http\Controllers\PaiementController;
+use App\Http\Resources\PostResource;
 use App\Models\Adherant;
 use App\Models\Commune;
 use App\Models\Role;
@@ -11,6 +12,32 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 
+
+
+
+
+Route::get('/verify_carte/{identifiant?}', function ($identifiant=null) {
+
+    $a= Adherant::where('identifiant','=',$identifiant )->first() ;
+    $cater=null;
+
+    if($a!=null){
+        $cater= url('/').'/storage'.$a->carte_membre ;
+    }
+
+
+//    if ($a ==null ){
+//        return new PostResource(true, "Numéro d'adherent non valide",null);
+//
+//    }else{
+//        return new PostResource(true, 'valide', 'valide' );
+//    }
+
+
+
+    return view('verify_carte', ['identifiant'=>$identifiant,'carte'=>$cater]);
+
+})->name('verify_carte');
 
 
 

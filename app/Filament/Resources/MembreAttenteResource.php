@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 
 use App\Filament\Exports\AdherantExporter;
+use App\Filament\Resources\AdherantResource\Pages\ViewAdherant;
 use App\Filament\Resources\MembreAttenteResource\Pages;
 use App\Filament\Resources\MembreAttenteResource\RelationManagers;
 use App\Mail\SampleMail2;
@@ -15,6 +16,8 @@ use App\Models\RoleCommune;
 use App\Models\User;
 use Carbon\Carbon;
 use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
@@ -25,6 +28,8 @@ use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Actions\ExportAction;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -35,6 +40,8 @@ use Filament\Tables\Enums\ActionsPosition;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Filament\Actions\Exports\Enums\ExportFormat;
+
+use Filament\Tables\Enums\FiltersLayout;
 
 
 
@@ -52,7 +59,193 @@ class MembreAttenteResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?int $navigationSort=3;
 
+    protected static ?string $recordTitleAttribute = 'nom';
+    protected $listeners = ['refreshRelations' => '$refresh'];
 
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+
+                Forms\Components\TextInput::make('nom')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('prenom')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\DatePicker::make('date_naissance')
+                    ->required(),
+                Forms\Components\TextInput::make('lieu_residence')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('adresse')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('telephone')
+                    ->tel()
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('email')
+                    ->email()
+                    ->required()
+                    ->maxLength(255),
+
+
+
+                Forms\Components\Select::make('genre')
+                    ->options([
+
+                        'MASCULIN' => 'MASCULIN',
+                        'FEMININ' => 'FEMININ',
+                    ]),
+
+
+
+                Forms\Components\Select::make('departement_id')
+                    ->relationship('departement','libelle')
+                    ->searchable()
+                    ->preload()
+                    ->afterStateUpdated( function (Set $set){
+                        $set('commune_id',null);
+                        $set('arrondissement_id',null);
+                        $set('quartier_id',null);
+
+                    })
+
+                    ->required()
+                ,
+                Forms\Components\Select::make('commune_id')
+//                    ->relationship('commune','libelle')
+                    ->options(fn (Get $get): Collection => Commune::query()
+                        ->where('departement_id',$get('departement_id'))
+                        ->pluck("libelle","id")
+                    )
+                    ->afterStateUpdated( function (Set $set){
+
+                        $set('arrondissement_id',null);
+                        $set('quartier_id',null);
+
+                    })
+                    ->searchable()
+                    ->preload()
+                    ->live()
+                    ->required()
+                ,
+                Forms\Components\Select::make('arrondissement_id')
+                    ->required()
+
+//                    ->relationship('arrondissement','libelle')
+                    ->options(fn (Get $get): Collection => Arrondissement::query()
+                        ->where('commune_id',$get('commune_id'))
+                        ->pluck("libelle","id")
+                    )
+                    ->afterStateUpdated( function (Set $set){
+
+
+                        $set('quartier_id',null);
+
+                    })
+                    ->live()
+                    ->searchable()
+                    ->preload(),
+                Forms\Components\Select::make('quartier_id')
+                    ->required()
+                    ->relationship('quartier','libelle')
+                    ->searchable()
+                    ->preload(),
+
+//                Forms\Components\TextInput::make('photo_identite')
+//                    ->required()
+//                    ->maxLength(255),
+
+                FileUpload::make('photo_identite')
+                    ->columnSpan('full')
+
+                    ->directory(function ($record) {
+
+                        $lastid= Adherant::  latest()->first()->id+1;
+//                         dd($lastid,$record->id);
+
+                        return 'adherant_photo/' . ($record ? $record->id : $lastid);
+                    })
+                    ->fetchFileInformation(false)
+
+//                    ->directory('/adherant_photo')
+                    ->required(),
+
+//                Forms\Components\TextInput::make('photo_identite')
+//                    ->required()
+//                    ->maxLength(255),
+                FileUpload::make('piece_photo_identite')
+                    ->columnSpan('full')
+//                    ->directory('/adherant_photo_id')
+                    ->fetchFileInformation(false)
+                    ->directory(function ($record) {
+
+                        $lastid= Adherant::  latest()->first()->id+1;
+
+                        return '/adherant_photo_id/' . ($record ? $record->id : $lastid);
+                    })
+                    ->required(),
+
+//                Forms\Components\TextInput::make('piece_photo_identite')
+//                    ->required()
+//                    ->maxLength(255),
+//                Forms\Components\TextInput::make('niveau_instruction')
+//                    ->required()
+//                    ->maxLength(255),
+
+
+                Forms\Components\Select::make('niveau_instruction')
+                    ->required()
+                    ->options([
+                        'CEP' => 'CEP',
+                        'BEPC' => 'BEPC',
+                        'BAC' => 'BAC',
+                        'LICENCE' => 'LICENCE',
+                        'MASTER' => 'MASTER',
+                        'DOCTORAT' => 'DOCTORAT',
+                        'AUTRE' => 'AUTRE',
+                    ]),
+
+                Forms\Components\Select::make('categorie_socio')
+                    ->label('Catégorie socio professionelle')
+                    ->options([
+
+                        'Artisans' => 'Artisans',
+                        'Employés' => 'Employés',
+                        'Ouviriers' => 'Ouviriers',
+                        'Agriculteurs exploitants' => 'Agriculteurs exploitants',
+                        'Elèves' => 'Elèves',
+                        'Enseignants' => 'Enseignants',
+                        'Etudiants' => 'Etudiants',
+                        'AUTRE' => 'AUTRE',
+                    ]),
+
+                Forms\Components\TextInput::make('activite_profession')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\Textarea::make('ambition_politique')
+                    ->required()
+                    ->columnSpanFull(),
+//                Forms\Components\TextInput::make('status')
+//                    ->required()
+//                    ->maxLength(255)
+//                    ->default('EN ATTENTE DE VALIDATION'),
+
+                Forms\Components\Select::make('status')
+                    ->label('status')
+                    ->options([
+
+                        'EN ATTENTE DE VALIDATION' => 'EN ATTENTE DE VALIDATION',
+                        'APPROUVER' => 'APPROUVER',
+                        'NON APPROUVER' => 'NON APPROUVER',
+
+
+                    ]) ->default('EN ATTENTE DE VALIDATION'),
+            ])->columns(3);
+    }
+    /*
     public static function form(Form $form): Form
     {
         return $form
@@ -163,6 +356,7 @@ class MembreAttenteResource extends Resource
             ])
             ->columns(4);
     }
+    */
 
     public static function table(Table $table): Table
     {
@@ -170,7 +364,6 @@ class MembreAttenteResource extends Resource
             ->columns([
 
                 Tables\Columns\TextColumn::make('identifiant')
-
                     ->searchable(),
                 Tables\Columns\TextColumn::make('status')
 
@@ -205,7 +398,7 @@ class MembreAttenteResource extends Resource
                 Tables\Columns\TextColumn::make('lieu_residence')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->searchable(),
+                ,
 //                Tables\Columns\TextColumn::make('adresse')
 //                    ->searchable(),
 
@@ -224,7 +417,7 @@ class MembreAttenteResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('quartier.libelle')
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->searchable()
+
                     ->sortable(),
 
 
@@ -232,7 +425,7 @@ class MembreAttenteResource extends Resource
 //                    ->searchable(),
                 Tables\Columns\TextColumn::make('piece_photo_identite')
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->searchable(),
+                ,
                 Tables\Columns\TextColumn::make('niveau_instruction')
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable(),
@@ -249,10 +442,102 @@ class MembreAttenteResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-
             ->filters([
                 //
-            ])
+
+                Tables\Filters\SelectFilter::make("Departement")
+                    ->preload()
+                    ->searchable()
+                    ->relationship('departement','libelle'),
+
+                Tables\Filters\SelectFilter::make("Commune")
+                    ->preload()
+                    ->searchable()
+                    ->relationship('commune','libelle'),
+
+                Tables\Filters\SelectFilter::make("Arrondisement")
+                    ->preload()
+                    ->searchable()
+                    ->relationship('arrondissement','libelle'),
+
+                Tables\Filters\SelectFilter::make("Quartier")
+                    ->preload()
+                    ->searchable()
+                    ->relationship('quartier','libelle'),
+
+                SelectFilter::make('genre')
+                    ->options([
+
+                        'MASCULIN' => 'MASCULIN',
+                        'FEMININ' => 'FEMININ',
+                    ]),
+
+                SelectFilter::make('categorie_socio')
+                    ->label('Catégorie socio professionelle')
+                    ->options([
+
+                        'Artisans' => 'Artisans',
+                        'Employés' => 'Employés',
+                        'Ouviriers' => 'Ouviriers',
+                        'Agriculteurs exploitants' => 'Agriculteurs exploitants',
+                        'Elèves' => 'Elèves',
+                        'Enseignants' => 'Enseignants',
+                        'Etudiants' => 'Etudiants',
+                        'AUTRE' => 'AUTRE',
+                    ]),
+
+                SelectFilter::make('niveau_instruction')
+                    ->options([
+
+                        'CEP' => 'CEP',
+                        'BEPC' => 'BEPC',
+                        'BAC' => 'BAC',
+                        'LICENCE' => 'LICENCE',
+                        'MASTER' => 'MASTER',
+                        'DOCTORAT' => 'DOCTORAT',
+                        'AUTRE' => 'AUTRE',
+                    ]),
+
+                Filter::make('created_at')
+                    ->label("Periode")
+                    ->form([
+                        DatePicker::make('created_from')->label('Date debut'),
+                        DatePicker::make('created_until')->label('Date fin'),
+                    ])
+                    ->query(function (\Illuminate\Contracts\Database\Eloquent\Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['created_from'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                            )
+                            ->when(
+                                $data['created_until'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                            );
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['created_from'] ?? null) {
+                            $indicators['created_from'] = 'Date debut ' . \Illuminate\Support\Carbon::parse($data['created_from'])->toFormattedDateString();
+                        }
+                        if ($data['created_until'] ?? null) {
+                            $indicators['created_until'] = 'Date fin ' . Carbon::parse($data['created_until'])->toFormattedDateString();
+                        }
+
+                        return $indicators;
+                    })->columnSpan(2)->columns(2),
+
+//                Tables\Filters\SelectFilter::make("Departement")
+//                    ->preload()
+//                    ->searchable()
+            ],
+//                layout: FiltersLayout::AboveContent
+                layout:FiltersLayout:: AboveContentCollapsible
+            )
+//            ->filters([
+//                //
+//
+//            ])
             ->modifyQueryUsing(function ( Builder $query) {
 
                 $user = Auth::user();
@@ -300,7 +585,6 @@ class MembreAttenteResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\Action::make('activate')
-
                     ->action(function ($record) {
 
                         $user = Auth::user();
@@ -369,7 +653,8 @@ class MembreAttenteResource extends Resource
                     ->requiresConfirmation()
                     ->color('success'),
 //                Tables\Actions\EditAction::make(),
-            ], position: ActionsPosition::BeforeColumns)
+            ],
+                position: ActionsPosition::BeforeColumns)
             ->headerActions([
                 ExportAction::make()
                     ->exporter(AdherantExporter::class)
@@ -422,12 +707,7 @@ class MembreAttenteResource extends Resource
                 ]),
 
             ])
-
-
-
             ->recordClasses(function (Adherant $record) {
-
-//                dd($record->status  );
 
                 $class = match ($record->status) {
 
@@ -451,6 +731,18 @@ class MembreAttenteResource extends Resource
         ];
     }
 
+
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListMembreAttentes::route('/'),
+            'create' => Pages\CreateMembreAttente::route('/create'),
+            'edit' => Pages\EditMembreAttente::route('/{record}/edit'),
+            'view' =>  ViewAdherant::route('/{record}'),
+        ];
+    }
+
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist
@@ -460,10 +752,9 @@ class MembreAttenteResource extends Resource
                         TextEntry::make('nom'),
                         TextEntry::make( 'prenom'   ),
                         TextEntry::make(  'date_naissance'   ),
-
-                        TextEntry::make('telephone'),
                         TextEntry::make('email'),
-                    ])->columns(3),
+                        TextEntry::make('telephone'),
+                    ])->columns(4),
                 Section::make('Adresse')
                     ->schema([
                         TextEntry::make('departeemnt.libelle'),
@@ -485,17 +776,6 @@ class MembreAttenteResource extends Resource
                     ])->columns(2)
             ]);
     }
-
-    public static function getPages(): array
-    {
-        return [
-            'index' => Pages\ListMembreAttentes::route('/'),
-            'create' => Pages\CreateMembreAttente::route('/create'),
-            'edit' => Pages\EditMembreAttente::route('/{record}/edit'),
-        ];
-    }
-
-
     public static function shouldRegisterNavigation(): bool
     {
         $user = Auth::user();
@@ -507,7 +787,7 @@ class MembreAttenteResource extends Resource
         }
 
     }
-
+/*
     public function generateMemberCard(Adherant $member)
     {
         $img = Image::make(storage_path('app/public/carte_template/cate_tampate.jpeg'));
@@ -527,5 +807,7 @@ class MembreAttenteResource extends Resource
 
         return response()->download(storage_path('app/public/carte_membre/'.$member->id.'generated_card.jpg'));
     }
+
+*/
 
 }
